@@ -4,7 +4,7 @@ Code associated with the Cancer Cell 2022 article "Transcriptomic profiles of ne
 
 Copyright Providence Health Services
 
-This code is distributed under a dual license. For academic, non-commerical use of the sofware the GNU Lesser General Public License (LGPLv3) open source license may be used. For commercial use of the software, please contact Dr. Brady Bernard <brady.bernard@providence.org>
+This code is distributed under a dual license. For academic, non-commerical use of the sofware the GNU Lesser General Public License (LGPLv3) open source license may be used. For commercial use of the software, please contact Dr. Brady Bernard <brady.bernard@providence.org>.
 
 # BCL to Fastq conversion:
 
