@@ -6,6 +6,67 @@ Copyright Providence Health Services
 
 This code is distributed under a dual license. For academic, non-commerical use of the sofware the GNU Lesser General Public License (LGPLv3) open source license may be used. For commercial use of the software, please contact Dr. Brady Bernard <brady.bernard@providence.org>.
 
+# Somatic mutation calling
+
+GATK best practices were followed for germline (blood) and tumor tissue Whole Exome Sequencing (WES) data (paired-end Illumina reads, 150 x 150bp), aligning with BWA MEM, followed by mutation calling using Mutect2, VarScan, Strelka, and SomaticSniper:
+
+```bash
+# BWA MEM (separately for NORMAL_ID and TUMOR_ID)
+$(DOCKER_RUN) ppmp-bwa mem \
+  -M \
+  -R '@RG\tID:'$(SAMPLE)'\tSM:'$(SAMPLE)'\tPL:ILLUMINA\tLB:lib1\tPU:flowcell-barcode.lane' \
+  $(REFSEQ) \
+  > $(NORMAL_ID.unsorted.sam
+# ... GATK Best Practices ... 
+# Mutect2
+$(DOCKER_RUN) ppmp-gatk4 gatk --java-options "-Xmx12g" Mutect2 \
+  -R $(REFSEQ) \
+  -I $(TUMOR_ID)_reads.bam \
+  -I $(NORMAL_ID)_reads.bam \
+  -tumor $(TUMOR_ID) -normal $(NORMAL_ID) \
+  --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter \
+  --germline-resource $(REFDIR)/hg19/af-only-gnomad.hg19.sorted.vcf.gz \
+  --panel-of-normals $(REFDIR)/hg19/mutect2_pon.vcf.gz \
+  -O mutect_raw.vcf
+# VarScan
+$(DOCKER_RUN) ppmp-varscan \
+  somatic \
+  $(NORMAL_ID).pileup \
+  $(TUMOR_ID).pileup \
+  varscan/varscan \
+  --tumor-purity .5 \
+  --output-vcf 1 \
+  --min-reads2 2 \
+  --min-coverage 4 \
+  --min-var-freq .05 \
+  --strand-filter 0 \
+# Strelka - commands from script that is the Docker entrypoint
+/opt/strelka/bin/configureStrelkaSomaticWorkflow.py \
+  --tumorBam /tmp/tumor.bam --normalBam /tmp/normal.bam \
+  --ref /tmp/reference/ref.fasta \
+  --runDir /tmp/out \
+  --exome
+/tmp/out/runWorkflow.py -m local -j $(nproc)
+# SomaticSniper
+$(DOCKER_RUN) ppmp-somaticsniper \
+  bam-somaticsniper \
+  -L -G -F \
+  vcf -f $(REFSEQ) \
+  $(TUMOR_ID)_reads.bam $(NORMAL_ID)_reads.bam \
+  somaticsniper_raw.vcf 
+```
+
+# HLA-calling from WES or RNA-Seq
+
+```bash
+# PHLAT - commands from script that is the Docker entrypoint
+/usr/bin/python2.7 -O /opt/phlat-1.0/dist/PHLAT.py \
+  -1 /tmp/sample_1.fastq.gz -2 /tmp/sample_2.fastq.gz \
+  -index /tmp/reference/index4phlat \
+  -b2url /opt/bowtie2-2.2.3/bowtie2 \
+  -tag sample -p 16 -e /opt/phlat-1.0 -o /tmp/output
+```
+
 # Single-cell (Smart-seq2)
 
 ## TraCeR
