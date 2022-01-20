@@ -6,9 +6,9 @@ Copyright Providence Health Services
 
 This code is distributed under a dual license. For academic, non-commerical use of the sofware the GNU Lesser General Public License (LGPLv3) open source license may be used. For commercial use of the software, please contact Dr. Brady Bernard <brady.bernard@providence.org>.
 
-## Single-cell (Smart-seq2)
+# Single-cell (Smart-seq2)
 
-# TraCeR
+## TraCeR
 
 ```bash
 docker run --rm -v /home/ubuntu/:/scratch -w /scratch teichlab/tracer assemble \
@@ -17,7 +17,7 @@ docker run --rm -v /home/ubuntu/:/scratch -w /scratch teichlab/tracer assemble \
     > ${sample}.log
 ```
 
-# MiXCR
+## MiXCR
 
 ```bash
 mixcr analyze amplicon --species hsa --starting-material rna \
@@ -32,7 +32,7 @@ mixcr analyze amplicon --species hsa --starting-material rna \
     > ${sample}.log
 ```
 
-# Gene Expression (in Seurat)
+## Gene Expression (in Seurat)
 
 ```R
 fn <- list.files( path="tracer.results", pattern="abundance.tsv$", recursive=T, full.names=T )
@@ -90,9 +90,9 @@ library( Seurat )
 gex.raw <- CreateSeuratObject( counts )
 ```
 
-## Single-cell (10X Genomics)
+# Single-cell (10X Genomics)
 
-# RNA-Seq / CITE-Seq
+## RNA-Seq / CITE-Seq
 
 ```bash
 ./cellranger-3.1.0/cellranger count \
@@ -109,7 +109,7 @@ temp <- Read10X( "${sample}-count/outs/count/filtered_feature_bc_matrix" )[[1]]
 gex <- CreateSeuratObject( temp )
 ```
 
-# TCR-Seq
+## TCR-Seq
 
 ```bash
 ./cellranger-3.1.0/cellranger vdj \
