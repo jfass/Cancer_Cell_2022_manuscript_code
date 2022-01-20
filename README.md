@@ -71,7 +71,7 @@ $(DOCKER_RUN) ppmp-somaticsniper \
 
 ## Alignment
 
-``bash
+```bash
 $(DOCKER_RUN) rna-star \
   --genomeDir $(REFDIR)/$(REF)/STAR_genome \
   --twopassMode Basic --readFilesIn \
