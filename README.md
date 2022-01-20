@@ -6,9 +6,11 @@ Copyright Providence Health Services
 
 This code is distributed under a dual license. For academic, non-commerical use of the sofware the GNU Lesser General Public License (LGPLv3) open source license may be used. For commercial use of the software, please contact Dr. Brady Bernard <brady.bernard@providence.org>.
 
+Code examples have been edited for clarity and brevity.
+
 # Somatic mutation calling
 
-GATK best practices were followed for germline (blood) and tumor tissue Whole Exome Sequencing (WES) data (paired-end Illumina reads, 150 x 150bp), aligning with BWA MEM, followed by mutation calling using Mutect2, VarScan, Strelka, and SomaticSniper:
+GATK best practices were followed for germline (blood) and tumor tissue Whole Exome Sequencing (WES) data (paired-end Illumina reads, 150 x 150bp), aligning with BWA MEM, followed by mutation calling using Mutect2, VarScan, Strelka, and SomaticSniper, and annotation with ANNOVAR and snpEff:
 
 ```bash
 # BWA MEM (separately for NORMAL_ID and TUMOR_ID)
@@ -53,7 +55,34 @@ $(DOCKER_RUN) ppmp-somaticsniper \
   -L -G -F \
   vcf -f $(REFSEQ) \
   $(TUMOR_ID)_reads.bam $(NORMAL_ID)_reads.bam \
-  somaticsniper_raw.vcf 
+  somaticsniper_raw.vcf
+# combine calls
+$(DOCKER_RUN) ppmp-gatk \
+  -T CombineVariants \
+  -R $(REFSEQ) \
+  -V:varscan varscan_raw.vcf \
+  -V:mutect mutect_raw.vcf  \
+  -V:strelka strelka_raw.vcf \
+  -V:somaticsniper somaticsniper_raw.vcf \
+  -o combined.vcf
+# snpEff
+$(DOCKER_RUN) ppmp-snpeff \
+  java -Xmx4G -jar /opt/snpEff/snpEff.jar -v -t \
+  -datadir $(SNPEFF_DATA) -nodownload \
+  $(SNPEFF_REF)\
+  combined.vcf \
+  > combined.snpeff.vcf 
+# ANNOVAR
+$(DOCKER_RUN) ppmp-tnannovar convert2annovar.pl \
+  -format vcf4old \
+  combined.vcf \
+  --withzyg \
+  -outfile combined.av
+ppmp-tnannovar table_annovar.pl \
+  combined.av \
+  $(ANNOVAR_DATA) -buildver hg19 -v \
+  -out combined.sum \
+  -remove -protocol refGene,knownGene,ensGene,snp138NonFlagged,1000g2012apr_all,1000g2012apr_eur,1000g2012apr_amr,1000g2012apr_asn,1000g2012apr_afr,cosmic70 -operation g,g,g,f,f,f,f,f,f,f -nastring NA
 ```
 
 # HLA-calling from WES or RNA-Seq
