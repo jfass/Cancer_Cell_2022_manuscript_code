@@ -40,7 +40,7 @@ $(DOCKER_RUN) ppmp-varscan \
   --min-coverage 4 \
   --min-var-freq .05 \
   --strand-filter 0 \
-# Strelka - commands from script that is the Docker entrypoint
+# Strelka - commands from Docker entrypoint script
 /opt/strelka/bin/configureStrelkaSomaticWorkflow.py \
   --tumorBam /tmp/tumor.bam --normalBam /tmp/normal.bam \
   --ref /tmp/reference/ref.fasta \
@@ -59,12 +59,36 @@ $(DOCKER_RUN) ppmp-somaticsniper \
 # HLA-calling from WES or RNA-Seq
 
 ```bash
-# PHLAT - commands from script that is the Docker entrypoint
+# PHLAT - command from Docker entrypoint script
 /usr/bin/python2.7 -O /opt/phlat-1.0/dist/PHLAT.py \
   -1 /tmp/sample_1.fastq.gz -2 /tmp/sample_2.fastq.gz \
   -index /tmp/reference/index4phlat \
   -b2url /opt/bowtie2-2.2.3/bowtie2 \
   -tag sample -p 16 -e /opt/phlat-1.0 -o /tmp/output
+```
+
+# RNA-Seq
+
+## Alignment
+
+``bash
+$(DOCKER_RUN) rna-star \
+  --genomeDir $(REFDIR)/$(REF)/STAR_genome \
+  --twopassMode Basic --readFilesIn \
+  $(SAMPLE)_R1.fastq.gz $(SAMPLE)_R2.fastq.gz \
+  --readFilesCommand zcat \
+  --outFileNamePrefix twopass/$(SAMPLE)_paired \
+  --outSAMtype BAM SortedByCoordinate --outSAMmapqUnique 60 --runThreadN 3 \
+  --outSAMunmapped Within
+```
+
+## Transcript-level expression
+
+```bash
+# Cufflinks - command from Docker entrypoint script
+/opt/cufflinks/cufflinks \
+  -p 32 -G /Ref/ann.gtf --library-type fr-firststrand \
+  --output-dir /tmp/ /work/$(SAMPLE).deduped.bam
 ```
 
 # Single-cell (Smart-seq2)
