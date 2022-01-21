@@ -94,6 +94,28 @@ ppmp-tnannovar table_annovar.pl \
   -index /tmp/reference/index4phlat \
   -b2url /opt/bowtie2-2.2.3/bowtie2 \
   -tag sample -p 16 -e /opt/phlat-1.0 -o /tmp/output
+# xHLA - command from Docker entrypoint script
+samtools view -h -F 3840 alignments.bam \
+  | perl -ane '@B=split("",sprintf("%08b",$F[1]));
+               print if $F[0]=~m/^@/ or $B[5] or $B[4] or ($F[2] eq "chr6" and $F[3]>28477796 and $F[3]<33448355) or $F[2]=~m/^chr6.*hap/;' \
+  | samtools view -bS - \
+  | samtools sort -n -@ 12 -m 16G - \
+  | bedtools bamtofastq -i - -fq /tmp/output/R1.fq -fq2 /tmp/output/R2.fq 2> /tmp/output/b2fq.log
+bwa mem -t 12 /tmp/ref/GRCh38.primary_assembly.genome.fa /tmp/output/R1.fq /tmp/output/R2.fq 2> /tmp/output/mem.log \
+  | samtools view -b - \
+  | samtools sort -@ 12 -m 16G -o /tmp/output/remap.bam -
+samtools index /tmp/output/remap.bam
+samtools view -b /tmp/output/remap.bam chr6:29844528-33100696 > /tmp/output/remap.hla.bam
+samtools index /tmp/output/remap.hla.bam
+python3 /opt/HLA/bin/run.py --sample_id sample --input_bam_path /tmp/output/remap.hla.bam --output_path /tmp/output
+# HLA*LA
+$(DOCKER_RUN) rna-hla-la \
+  --BAM /tmp/alignments.bam \
+  --graph ../graphs/PRG_MHC_GRCh38_withIMGT \
+  --sampleID $(NEWSAMPLE) \
+  --maxThreads 12 \
+  --workingDir /tmp/output \
+  --picard_sam2fastq_bin /opt/picard.jar 
 ```
 
 # RNA-Seq
